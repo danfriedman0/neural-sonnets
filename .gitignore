@@ -1,0 +1,6 @@
+data/*
+cv/*
+*.pyc
+timeline.json
+reports/*
+logs.txt
