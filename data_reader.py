@@ -9,6 +9,7 @@ import collections
 import re
 import json
 import random
+import math
 
 import numpy as np
 
@@ -28,10 +29,52 @@ STOP = "[STOP]"
 # Then make batches
 
 
+def get_keyword_extractor(texts):
+    # https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+    # A text is a list of words
+    
+    # term frequency
+    print('tf')
+    tf = {}
+    idf_counts = collections.Counter()
+    words = set()
+    word_sets = []
+    for i,text in enumerate(texts):
+        tf[i] = collections.Counter(text)
+        word_set = tf[i].keys()
+        for word in word_set:
+            idf_counts[word] += 1
+        words.update(word_set)
+        word_sets.append(word_set)
+
+    # inverse document frequency
+    idf = {}
+    N = len(texts)
+    for word in words:
+        idf[word] = math.log(N / idf_counts[word])
+
+    
+    print('tf_idf')
+    # term frequency-inverse document frequency
+    tf_idf = {}
+    for i,word_set in enumerate(word_sets):
+        for word in word_set:
+            tf_idf[word] = tf[i][word] * idf[word]
+
+    def get_keywords(words, k):
+        words = list(set([word for word in words if word in tf_idf]))
+        if len(words) < k:
+            return words + [UNK for _ in xrange(k - len(words))]
+        words = sorted(words, key=lambda w: -tf_idf[w])
+        return words[:k]
+
+    return get_keywords
+
+
 def load_data(fn):
-    # Data is a list of (description, [captions]) pairs
+    # Data is text file of sonnets with one blank line between each sonnet
     with open(fn, 'r') as f:
-        data = json.load(f)
+        data = f.read()
     return data
 
 
