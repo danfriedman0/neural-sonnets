@@ -19,7 +19,7 @@ def write_file_by_chunks(fn_in='data/sonnets.txt',
                          fn_out='data/sonnets_ipa.txt'):
     with codecs.open(abs_path(fn_in), 'r', encoding='utf-8') as f_in:
         text = f_in.read()
-    
+
     punctuation = set(string.punctuation)
     punctuation.add('\n')
     punctuation.remove("'")
@@ -31,9 +31,10 @@ def write_file_by_chunks(fn_in='data/sonnets.txt',
     pad = lambda p: p if p == '\n' else ' ' + p + ' '
 
     while j < len(text):
-        sys.stdout.write('\r')
-        sys.stdout.write('{}/{}'.format(j, len(text)-1))
-        sys.stdout.flush()
+        if j % 1000 == 0:
+            sys.stdout.write('\r')
+            sys.stdout.write('{}/{}'.format(j, len(text)-1))
+            sys.stdout.flush()
         if text[j] in punctuation:
             if i == j:
                 out.append(pad(text[j]))
@@ -53,42 +54,6 @@ def write_file_by_chunks(fn_in='data/sonnets.txt',
     with codecs.open(abs_path(fn_out), 'w', encoding='utf-8') as f_out:
         f_out.write(final)
     print('\n')
-
-
-
-
-
-def write_file_by_words(infile, outfile):
-    with codecs.open(infile, "r", encoding="utf-8") as f_in:
-        lines = f_in.readlines()
-
-    word_to_ipa = {}
-
-    pat = re.compile('(\w+\'?\w+|\w|[^ \w\'])')
-    with codecs.open(outfile, "w", encoding="utf-8") as f_out:
-        for i, line in enumerate(lines):
-            words = re.findall(pat, line)
-            phones = []
-            for word in words:
-                word = word.lower()
-                if word in word_to_ipa:
-                    phones.append(word_to_ipa[word])
-                elif len(word) == 1 and word[0] not in string.letters:
-                    word_to_ipa[word] = word
-                    phones.append(word)
-                else:
-                    ipa = check_output(["espeak","--ipa","-q",word]).decode('utf-8')
-                    ipa = ipa.strip()
-                    word_to_ipa[word] = ipa
-                    phones.append(ipa)
-            line_out = " ".join(phones)
-            f_out.write(line_out)
-            if i % 1000 == 0:
-                print("{}/{}".format(i, len(lines)))
-
-    with open("/Users/danfriedman/Box Sync/My Box Files/9 senior spring/gen/lstm/data/_word_to_ipa.pkl", "wb") as f:
-        pickle.dump(word_to_ipa, f, pickle.HIGHEST_PROTOCOL)
-
 
 
 def build_dict(infile, outfile):
@@ -119,45 +84,6 @@ def build_dict(infile, outfile):
         pickle.dump(word_to_ipa, f_out, pickle.HIGHEST_PROTOCOL)
 
     print "Done."
-
-
-def tokenize_file(infile, outfile):
-    pat = re.compile('(\w+\'?\w+|\w|[^ \w\'])')
-    with codecs.open(infile, "r", encoding="utf-8") as f_in:
-        s = f_in.read()
-
-    with codecs.open(outfile, "w", encoding="utf-8") as f_out:
-        toks = re.findall(pat, s)
-        f_out.write(' '.join(toks))
-
-
-def test():
-    infile = ''
-    outfile = ''
-    with open(infile, "rb") as f:
-        word_to_ipa = pickle.load(f)
-
-    pat = re.compile('(\w+\'?\w+|\w|[^ \w\'])')
-    with codecs.open(outfile, "r", encoding="utf-8") as f:
-        s = f.read()
-        words = re.findall(pat, s)
-
-    cnt = 0
-    not_found = set()
-    for i, word in enumerate(words):
-        if word.lower() in word_to_ipa:
-            cnt += 1
-        else:
-            not_found.add(word)
-
-    print("{}/{}".format(cnt, len(words)))
-    print(not_found)
-
-    for tok in not_found:
-        word_to_ipa[tok] = tok
-
-    with open(infile, "wb") as f:
-        word_to_ipa = pickle.dump(word_to_ipa, f, pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
